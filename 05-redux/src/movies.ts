@@ -1,0 +1,22 @@
+export const movies = [
+  { name: "Inception", price: 199, poster: "https://via.placeholder.com/300x450?text=Inception" },
+  { name: "Interstellar", price: 249, poster: "https://via.placeholder.com/300x450?text=Interstellar" },
+  { name: "The Dark Knight", price: 199, poster: "https://via.placeholder.com/300x450?text=The+Dark+Knight" },
+  { name: "Avengers: Endgame", price: 299, poster: "https://via.placeholder.com/300x450?text=Avengers+Endgame" },
+  { name: "Titanic", price: 179, poster: "https://via.placeholder.com/300x450?text=Titanic" },
+  { name: "Jurassic Park", price: 189, poster: "https://via.placeholder.com/300x450?text=Jurassic+Park" },
+  { name: "The Matrix", price: 199, poster: "https://via.placeholder.com/300x450?text=The+Matrix" },
+  { name: "Gladiator", price: 169, poster: "https://via.placeholder.com/300x450?text=Gladiator" },
+  { name: "Spider-Man: No Way Home", price: 299, poster: "https://via.placeholder.com/300x450?text=Spider-Man+No+Way+Home" },
+  { name: "Doctor Strange", price: 219, poster: "https://via.placeholder.com/300x450?text=Doctor+Strange" },
+  { name: "Iron Man", price: 199, poster: "https://via.placeholder.com/300x450?text=Iron+Man" },
+  { name: "Captain America: Civil War", price: 229, poster: "https://via.placeholder.com/300x450?text=Civil+War" },
+  { name: "Black Panther", price: 219, poster: "https://via.placeholder.com/300x450?text=Black+Panther" },
+  { name: "Thor: Ragnarok", price: 209, poster: "https://via.placeholder.com/300x450?text=Thor+Ragnarok" },
+  { name: "Avatar", price: 249, poster: "https://via.placeholder.com/300x450?text=Avatar" },
+  { name: "Avatar: The Way of Water", price: 299, poster: "https://via.placeholder.com/300x450?text=Avatar+2" },
+  { name: "The Lord of the Rings", price: 259, poster: "https://via.placeholder.com/300x450?text=LOTR" },
+  { name: "Harry Potter", price: 199, poster: "https://via.placeholder.com/300x450?text=Harry+Potter" },
+  { name: "Frozen", price: 159, poster: "https://via.placeholder.com/300x450?text=Frozen" },
+  { name: "Toy Story", price: 149, poster: "https://via.placeholder.com/300x450?text=Toy+Story" }
+];

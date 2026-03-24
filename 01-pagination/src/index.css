@@ -1,0 +1,51 @@
+#root {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.app {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1rem;
+  box-sizing: border-box;
+  width: 72rem;
+  flex-direction: column;
+}
+
+.products {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 20px;
+  padding: 10px;
+}
+
+.product {
+  background-color: rgb(220, 220, 220);
+  text-align: center;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.pagination {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  padding: 10px;
+}
+
+.pagination > span {
+  border: 1px solid gray;
+  border-radius: 12px;
+  cursor: pointer;
+  padding: 10px;
+}
+
+.pagination__select {
+  background-color: cadetblue;
+}
+
+
+

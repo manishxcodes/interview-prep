@@ -9,7 +9,7 @@ import HomePage from "./pages/home-page";
 import ProductFormPage from "./pages/product-form-page";
 import CartPage from "./pages/cart-page";
 import MyProductsPage from "./pages/my-product-page";
-import ShopPage from "./pages/shop-page";
+import OrderSuccessPage from "./pages/order-success-page";
 
 const App: React.FC = () => {
   return (
@@ -21,7 +21,7 @@ const App: React.FC = () => {
             <Navbar />
             <Routes>
               <Route path="/" element={<HomePage />} />
-              <Route path="/shop" element={<ShopPage />} />
+              <Route path="/order-success" element={<OrderSuccessPage />} />
               <Route path="/product/:id" element={<ProductFormPage />} />
               <Route path="/cart" element={<CartPage />} />
               <Route path="/my-products" element={<MyProductsPage />} />

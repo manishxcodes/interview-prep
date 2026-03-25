@@ -7,6 +7,7 @@ import {
   Chip,
   Divider,
   Avatar,
+  Tooltip,
 } from "@mui/material";
 import { Add, Remove, DeleteOutline } from "@mui/icons-material";
 import { type CartItem as CartItemType } from "../types";
@@ -14,10 +15,11 @@ import useCart from "../hooks/useCart";
 
 interface CartItemProps {
   item: CartItemType;
+  onRemove: (productId: string) => void;
 }
 
-const CartItem: React.FC<CartItemProps> = ({ item }) => {
-  const { handleRemoveFromCart, handleIncrease, handleDecrease } = useCart();
+const CartItem: React.FC<CartItemProps> = ({ item, onRemove }) => {
+  const { handleIncrease, handleDecrease } = useCart();
   const { product, quantity } = item;
 
   return (
@@ -57,16 +59,36 @@ const CartItem: React.FC<CartItemProps> = ({ item }) => {
 
       {/* Product Info */}
       <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-        <Typography variant="subtitle1" fontWeight={600} noWrap>
-          {product.name}
-        </Typography>
-        <Chip
-          label={product.brand}
-          size="small"
-          variant="outlined"
-          color="primary"
-          sx={{ mt: 0.5, fontSize: "0.7rem" }}
-        />
+        <Tooltip title={product.name}>
+          <Typography
+            variant="subtitle1"
+            fontWeight={600}
+            sx={{
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {product.name}
+          </Typography>
+        </Tooltip>
+        <Tooltip title={product.brand}>
+          <Chip
+            label={product.brand}
+            size="small"
+            variant="outlined"
+            color="primary"
+            sx={{
+              mt: 0.5,
+              fontSize: "0.7rem",
+              maxWidth: "100%",
+              "& .MuiChip-label": {
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              },
+            }}
+          />
+        </Tooltip>
       </Box>
 
       <Divider
@@ -128,7 +150,7 @@ const CartItem: React.FC<CartItemProps> = ({ item }) => {
 
       {/* Delete */}
       <IconButton
-        onClick={() => handleRemoveFromCart(product.id)}
+        onClick={() => onRemove(product.id)}
         color="error"
         size="small"
         sx={{ flexShrink: 0 }}

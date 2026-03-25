@@ -4,69 +4,80 @@ import {
   CardContent,
   CardActions,
   CardMedia,
-  Typography,
+  Box,
   Button,
   Chip,
-  Box,
+  Typography,
+  Tooltip,
+  IconButton,
 } from "@mui/material";
 import {
+  Add,
+  Remove,
   ShoppingCart,
   CheckCircle,
   ImageNotSupported,
 } from "@mui/icons-material";
 import { type Product } from "../types";
-import { useNavigate } from "react-router-dom";
-import useCart from "../hooks/useCart";
 
-interface ProductCardProps {
+type Props = {
   product: Product;
-}
+  inCart: boolean;
+  cartQty: number;
+  localQty: number;
+  onAdd: (product: Product) => void;
+  onIncrease: (id: string) => void;
+  onDecrease: (id: string) => void;
+  setQty: (id: string, val: number, max: number) => void;
+};
 
-const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
-  const navigate = useNavigate();
-  const { isInCart } = useCart();
+const IMG_HEIGHT = 160;
 
-  if (!product) return null;
-
-  const inCart = isInCart(product.id);
-
+const ProductCard: React.FC<Props> = ({
+  product,
+  inCart,
+  cartQty,
+  localQty,
+  onAdd,
+  onIncrease,
+  onDecrease,
+  setQty,
+}) => {
   return (
     <Card
       elevation={0}
       sx={{
         border: "1px solid",
-        borderColor: inCart ? "success.main" : "divider",
+        borderColor: inCart ? "success.light" : "divider",
         borderRadius: 3,
-        height: "100%",
         display: "flex",
+        width: 300,
         flexDirection: "column",
-        transition: "box-shadow 0.2s, transform 0.2s",
+        overflow: "hidden",
+        transition: "all 0.25s ease",
+        backgroundColor: "background.paper",
+
         "&:hover": {
-          boxShadow: 4,
-          transform: "translateY(-2px)",
+          boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
+          transform: "translateY(-3px)",
         },
       }}
     >
-      {/* Product Image */}
+      {/* Image */}
       {product.imageUrl ? (
         <CardMedia
           component="img"
-          height="180"
           image={product.imageUrl}
           alt={product.name}
           sx={{
+            height: 170,
             objectFit: "cover",
-            borderRadius: "12px 12px 0 0",
-            padding: "10px",
-          }}
-          onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
-            e.currentTarget.style.display = "none";
           }}
         />
       ) : (
         <Box
           sx={{
-            height: 180,
+            height: IMG_HEIGHT,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -74,63 +85,136 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             borderRadius: "12px 12px 0 0",
           }}
         >
-          <ImageNotSupported sx={{ fontSize: 48, color: "text.disabled" }} />
+          <ImageNotSupported sx={{ fontSize: 40, color: "text.disabled" }} />
         </Box>
       )}
 
-      <CardContent sx={{ flexGrow: 1, pt: 2 }}>
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-start",
-            mb: 1,
-          }}
-        >
-          <Typography variant="h6" fontWeight={600} lineHeight={1.2}>
-            {product.name}
-          </Typography>
-          {inCart && <CheckCircle fontSize="small" color="success" />}
+      <CardContent
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 1,
+          p: 2,
+        }}
+      >
+        <Box display="flex" justifyContent="space-between" alignItems="center">
+          <Tooltip
+            title={product.name}
+            slotProps={{
+              popper: {
+                modifiers: [
+                  { name: "preventOverflow", options: { boundary: "window" } },
+                ],
+              },
+            }}
+          >
+            <Typography noWrap fontWeight={600}>
+              {product.name}
+            </Typography>
+          </Tooltip>
+
+          {inCart && <CheckCircle color="success" fontSize="small" />}
         </Box>
 
         <Chip
           label={product.brand}
           size="small"
-          sx={{ mb: 1.5, fontWeight: 500, fontSize: "0.7rem" }}
           variant="outlined"
-          color="primary"
+          sx={{ width: "fit-content", fontSize: "12px" }}
         />
 
+        <Tooltip title={product.description}>
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
+            }}
+          >
+            {product.description}
+          </Typography>
+        </Tooltip>
+
         <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
+          mt={1}
+          display="flex"
+          justifyContent="space-between"
+          alignItems="center"
         >
-          <Typography variant="h5" fontWeight={700} color="primary.main">
+          <Typography fontWeight={700} color="primary.main">
             ₹{product.price.toLocaleString("en-IN")}
           </Typography>
+
           <Chip
-            label={`Stock: ${product.stock}`}
+            label={`${product.stock}`}
             size="small"
             color={product.stock > 0 ? "success" : "error"}
-            variant="filled"
           />
         </Box>
       </CardContent>
 
-      <CardActions sx={{ px: 2, pb: 2 }}>
+      {/* Actions */}
+      <CardActions
+        sx={{
+          px: 2,
+          pb: 2,
+          pt: 0,
+          display: "flex",
+          gap: 1,
+        }}
+      >
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            border: "1px solid",
+            borderColor: "divider",
+            borderRadius: 2,
+          }}
+        >
+          <IconButton
+            size="small"
+            onClick={() =>
+              inCart
+                ? onDecrease(product.id)
+                : setQty(product.id, localQty - 1, product.stock)
+            }
+            disabled={inCart ? cartQty <= 1 : localQty <= 1}
+          >
+            <Remove fontSize="small" />
+          </IconButton>
+
+          <Typography sx={{ px: 1, minWidth: 24, textAlign: "center" }}>
+            {inCart ? cartQty : localQty}
+          </Typography>
+
+          <IconButton
+            size="small"
+            onClick={() =>
+              inCart
+                ? onIncrease(product.id)
+                : setQty(product.id, localQty + 1, product.stock)
+            }
+            disabled={
+              inCart ? cartQty >= product.stock : localQty >= product.stock
+            }
+          >
+            <Add fontSize="small" />
+          </IconButton>
+        </Box>
+
         <Button
           fullWidth
           variant={inCart ? "outlined" : "contained"}
           color={inCart ? "success" : "primary"}
           startIcon={inCart ? <CheckCircle /> : <ShoppingCart />}
-          onClick={() => navigate("/shop")}
+          onClick={() => onAdd(product)}
           disabled={product.stock === 0}
-          sx={{ borderRadius: 2, textTransform: "none", fontWeight: 600 }}
         >
-          {inCart ? "In Cart — View Shop" : "Go to Shop"}
+          {inCart ? "Added" : "Add"}
         </Button>
       </CardActions>
     </Card>

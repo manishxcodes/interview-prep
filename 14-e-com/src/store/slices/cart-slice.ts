@@ -1,12 +1,22 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
-import type { CartState, Product } from '../../types';
+import type { CartSliceState, CouponState, Product } from '../../types';
 import {
   getCartFromStorage,
   saveCartToStorage,
 } from '../../utils/local-storage';
 
-const initialState: CartState = {
+const getSavedCoupon = (): CouponState | null => {
+  try {
+    const saved = localStorage.getItem('cart_coupon');
+    return saved ? JSON.parse(saved) : null;
+  } catch {
+    return null;
+  }
+}
+
+const initialState: CartSliceState = {
   items: getCartFromStorage(),
+  coupon: getSavedCoupon()
 };
 
 const cartSlice = createSlice({
@@ -58,6 +68,14 @@ const cartSlice = createSlice({
       state.items = [];
       saveCartToStorage(state.items);
     },
+    applyCoupon: (state, action: PayloadAction<CouponState>) => {
+      state.coupon = action.payload;
+      localStorage.setItem('cart_coupon', JSON.stringify(action.payload))
+    },
+    removeCoupon: (state) => {
+      state.coupon = null;
+      localStorage.removeItem('cart_coupon');
+    },
   },
 });
 
@@ -67,5 +85,7 @@ export const {
   increaseQuantity,
   decreaseQuantity,
   clearCart,
+  applyCoupon,
+  removeCoupon
 } = cartSlice.actions;
 export default cartSlice.reducer;

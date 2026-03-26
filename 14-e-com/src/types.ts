@@ -3,10 +3,11 @@ export interface Product {
   name: string;
   brand: string;
   price: number;
-  imageUrl: string;
+  imageUrls: string[];
   stock: number;
   description: string;
   createdAt: string;
+  forSale: boolean
 }
 
 export interface CartItem {
@@ -20,7 +21,8 @@ export interface ProductFormData {
   price: number;
   stock: number;
   description: string;
-  imageUrl :string;
+  imageUrls :string[];
+  forSale: boolean;
 }
 
 export interface ProductsState {
@@ -29,4 +31,14 @@ export interface ProductsState {
 
 export interface CartState {
   items: CartItem[];
+}
+
+export interface CouponState {
+  code: string;
+  discountPercent: number;
+}
+
+export interface CartSliceState {
+  items: CartItem[];
+  coupon: CouponState | null;
 }

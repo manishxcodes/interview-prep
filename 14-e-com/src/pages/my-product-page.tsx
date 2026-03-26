@@ -158,7 +158,24 @@ const MyProductsPage: React.FC = () => {
                     sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
                   >
                     <TableCell>
-                      <Typography fontWeight={600}>{product.name}</Typography>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                        }}
+                      >
+                        <Typography fontWeight={600}>{product.name}</Typography>
+                        {!product.forSale && (
+                          <Chip
+                            size="small"
+                            variant="filled"
+                            label={"Not for Sale"}
+                            color="error"
+                            sx={{ fontSize: "10px" }}
+                          />
+                        )}
+                      </Box>
                     </TableCell>
                     <TableCell>
                       <Chip

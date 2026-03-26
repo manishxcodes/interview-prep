@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Container,
   Typography,
@@ -7,25 +7,32 @@ import {
   Paper,
   Divider,
   Stack,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
+  TextField,
+  Chip,
+  InputAdornment,
+  Alert,
 } from "@mui/material";
 import {
   ShoppingCart,
   DeleteSweep,
   Store,
   ShoppingBag,
+  LocalOffer,
+  CheckCircle,
+  Cancel,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import CartItem from "../components/cart-item-card";
 import useCart from "../hooks/useCart";
 import useProduct from "../hooks/useProducts";
+import { ConfirmDialog } from "../components/ui/dialog-box";
+import { coupons } from "../utils/coupons";
+import { useAppDispatch, useAppSelector } from "../hooks/useRedux";
+import { applyCoupon, removeCoupon } from "../store/slices/cart-slice";
 
 const CartPage: React.FC = () => {
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
   const {
     items,
     totalItems,
@@ -35,12 +42,44 @@ const CartPage: React.FC = () => {
   } = useCart();
   const { handleUpdateProduct, getProductById } = useProduct();
 
+  // Read coupon from Redux (already rehydrated from localStorage on slice init)
+  const appliedCoupon = useAppSelector((s) => s.cart.coupon);
+
   const [clearDialogOpen, setClearDialogOpen] = useState(false);
   const [removeId, setRemoveId] = useState<string | null>(null);
   const [buyDialogOpen, setBuyDialogOpen] = useState(false);
+  const [couponInput, setCouponInput] = useState("");
+  const [couponError, setCouponError] = useState("");
+
+  const discountAmount = appliedCoupon
+    ? Math.round((totalPrice * appliedCoupon.discountPercent) / 100)
+    : 0;
+  const finalPrice = totalPrice - discountAmount;
+
+  const handleApplyCoupon = () => {
+    const code = couponInput.trim().toUpperCase();
+    if (!code) {
+      setCouponError("Please enter a coupon code.");
+      return;
+    }
+    if (coupons[code]) {
+      dispatch(applyCoupon({ code, discountPercent: coupons[code] }));
+      setCouponInput("");
+      setCouponError("");
+    } else {
+      setCouponError("Invalid coupon code. Try SAVE10, SAVE20, or FLAT50.");
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    dispatch(removeCoupon());
+    setCouponInput("");
+    setCouponError("");
+  };
 
   const handleConfirmClear = () => {
     handleClearCart();
+    dispatch(removeCoupon());
     setClearDialogOpen(false);
   };
 
@@ -65,8 +104,8 @@ const CartPage: React.FC = () => {
         });
       }
     });
-
     handleClearCart();
+    dispatch(removeCoupon());
     setBuyDialogOpen(false);
     navigate("/order-success");
   };
@@ -94,7 +133,7 @@ const CartPage: React.FC = () => {
           <Button
             variant="contained"
             startIcon={<Store />}
-            onClick={() => navigate("/shop")}
+            onClick={() => navigate("/")}
             sx={{ borderRadius: 2, textTransform: "none", fontWeight: 600 }}
           >
             Browse Shop
@@ -105,7 +144,7 @@ const CartPage: React.FC = () => {
   }
 
   return (
-    <Container maxWidth="md" sx={{ py: 4 }}>
+    <Container maxWidth="lg" sx={{ py: 4 }}>
       {/* Header */}
       <Box
         sx={{
@@ -136,176 +175,349 @@ const CartPage: React.FC = () => {
         </Button>
       </Box>
 
-      <Stack spacing={2} mb={3}>
-        {items.map((item) => (
-          <CartItem
-            key={item.product.id}
-            item={item}
-            onRemove={(id) => setRemoveId(id)}
-          />
-        ))}
-      </Stack>
-
-      {/* Order Summary */}
-      <Paper
-        elevation={0}
+      {/* Two column layout */}
+      <Box
         sx={{
-          border: "1px solid",
-          borderColor: "divider",
-          borderRadius: 3,
-          p: 3,
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", md: "1fr 360px" },
+          gap: 3,
+          alignItems: "flex-start",
         }}
       >
-        <Typography variant="h6" fontWeight={700} mb={2}>
-          Order Summary
-        </Typography>
-        <Divider sx={{ mb: 2 }} />
+        {/* Left — cart items */}
+        <Stack spacing={2}>
+          {items.map((item) => (
+            <CartItem
+              key={item.product.id}
+              item={item}
+              onRemove={(id) => setRemoveId(id)}
+            />
+          ))}
+        </Stack>
 
-        {items.map((item) => (
-          <Box
-            key={item.product.id}
-            sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}
+        {/* Right — order summary */}
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          {/* Coupon card */}
+          <Paper
+            elevation={0}
+            sx={{
+              border: "1px solid",
+              borderColor: "divider",
+              borderRadius: 3,
+              p: 2.5,
+            }}
           >
-            <Typography variant="body2" color="text.secondary">
-              {item.product.name} × {item.quantity}
-            </Typography>
-            <Typography variant="body2" fontWeight={500}>
-              ₹{(item.product.price * item.quantity).toLocaleString("en-IN")}
-            </Typography>
-          </Box>
-        ))}
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
+              <LocalOffer fontSize="small" color="primary" />
+              <Typography variant="subtitle1" fontWeight={700}>
+                Coupon Code
+              </Typography>
+            </Box>
 
-        <Divider sx={{ my: 2 }} />
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <Typography variant="h6" fontWeight={700}>
-            Total
-          </Typography>
-          <Typography variant="h5" fontWeight={700} color="primary.main">
-            ₹{totalPrice.toLocaleString("en-IN")}
-          </Typography>
+            {appliedCoupon ? (
+              /* Applied state */
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  bgcolor: "success.50",
+                  border: "1px solid",
+                  borderColor: "success.main",
+                  borderRadius: 2,
+                  px: 2,
+                  py: 1.25,
+                }}
+              >
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <CheckCircle fontSize="small" color="success" />
+                  <Box>
+                    <Typography
+                      variant="body2"
+                      fontWeight={700}
+                      color="success.dark"
+                    >
+                      {appliedCoupon.code}
+                    </Typography>
+                    <Typography variant="caption" color="success.dark">
+                      {appliedCoupon.discountPercent}% off · You save ₹
+                      {discountAmount.toLocaleString("en-IN")}
+                    </Typography>
+                  </Box>
+                </Box>
+                <Button
+                  size="small"
+                  color="error"
+                  startIcon={<Cancel fontSize="small" />}
+                  onClick={handleRemoveCoupon}
+                  sx={{ textTransform: "none", fontWeight: 600, minWidth: 0 }}
+                >
+                  Remove
+                </Button>
+              </Box>
+            ) : (
+              /* Input state */
+              <Box>
+                <Box sx={{ display: "flex", gap: 1 }}>
+                  <TextField
+                    placeholder="e.g. SAVE10"
+                    value={couponInput}
+                    onChange={(e) => {
+                      setCouponInput(e.target.value.toUpperCase());
+                      setCouponError("");
+                    }}
+                    onKeyDown={(e) => e.key === "Enter" && handleApplyCoupon()}
+                    size="small"
+                    fullWidth
+                    error={!!couponError}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <LocalOffer
+                            fontSize="small"
+                            sx={{ color: "text.disabled" }}
+                          />
+                        </InputAdornment>
+                      ),
+                      sx: { fontFamily: "monospace", letterSpacing: 1 },
+                    }}
+                  />
+                  <Button
+                    variant="contained"
+                    onClick={handleApplyCoupon}
+                    sx={{
+                      borderRadius: 2,
+                      textTransform: "none",
+                      fontWeight: 600,
+                      px: 2.5,
+                      flexShrink: 0,
+                    }}
+                  >
+                    Apply
+                  </Button>
+                </Box>
+                {couponError && (
+                  <Typography
+                    variant="caption"
+                    color="error"
+                    sx={{ mt: 0.75, display: "block" }}
+                  >
+                    {couponError}
+                  </Typography>
+                )}
+                {/* <Box
+                  sx={{ display: "flex", gap: 0.75, mt: 1.5, flexWrap: "wrap" }}
+                >
+                  {Object.keys(coupons).map((code) => (
+                    <Chip
+                      key={code}
+                      label={code}
+                      size="small"
+                      variant="outlined"
+                      onClick={() => {
+                        setCouponInput(code);
+                        setCouponError("");
+                      }}
+                      sx={{
+                        fontFamily: "monospace",
+                        fontSize: "0.7rem",
+                        cursor: "pointer",
+                        "&:hover": {
+                          bgcolor: "primary.50",
+                          borderColor: "primary.main",
+                        },
+                      }}
+                    />
+                  ))}
+                </Box> */}
+              </Box>
+            )}
+          </Paper>
+
+          {/* Order summary card */}
+          <Paper
+            elevation={0}
+            sx={{
+              border: "1px solid",
+              borderColor: "divider",
+              borderRadius: 3,
+              p: 2.5,
+              position: { md: "sticky" },
+              top: { md: 80 },
+            }}
+          >
+            <Typography variant="subtitle1" fontWeight={700} mb={2}>
+              Order Summary
+            </Typography>
+            <Divider sx={{ mb: 2 }} />
+
+            {/* Line items */}
+            <Stack spacing={1} mb={2}>
+              {items.map((item) => (
+                <Box
+                  key={item.product.id}
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      maxWidth: 180,
+                    }}
+                  >
+                    {item.product.name}{" "}
+                    <Box component="span" sx={{ opacity: 0.55 }}>
+                      × {item.quantity}
+                    </Box>
+                  </Typography>
+                  <Typography variant="body2" fontWeight={600}>
+                    ₹
+                    {(item.product.price * item.quantity).toLocaleString(
+                      "en-IN",
+                    )}
+                  </Typography>
+                </Box>
+              ))}
+            </Stack>
+
+            <Divider sx={{ mb: 2 }} />
+
+            {/* Subtotal */}
+            <Box
+              sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}
+            >
+              <Typography variant="body2" color="text.secondary">
+                Subtotal
+              </Typography>
+              <Typography variant="body2" fontWeight={600}>
+                ₹{totalPrice.toLocaleString("en-IN")}
+              </Typography>
+            </Box>
+
+            {/* Discount row — only show if applied */}
+            {appliedCoupon && (
+              <Box
+                sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}
+              >
+                <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                  <Typography variant="body2" color="success.main">
+                    Discount
+                  </Typography>
+                  <Chip
+                    label={appliedCoupon.code}
+                    size="small"
+                    color="success"
+                    variant="outlined"
+                    sx={{
+                      fontSize: "0.6rem",
+                      height: 18,
+                      fontFamily: "monospace",
+                    }}
+                  />
+                </Box>
+                <Typography
+                  variant="body2"
+                  fontWeight={600}
+                  color="success.main"
+                >
+                  − ₹{discountAmount.toLocaleString("en-IN")}
+                </Typography>
+              </Box>
+            )}
+
+            <Divider sx={{ my: 2 }} />
+
+            {/* Total */}
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                mb: 2.5,
+              }}
+            >
+              <Typography variant="h6" fontWeight={700}>
+                Total
+              </Typography>
+              <Box sx={{ textAlign: "right" }}>
+                <Typography
+                  variant="h5"
+                  fontWeight={800}
+                  color="primary.main"
+                  lineHeight={1}
+                >
+                  ₹{finalPrice.toLocaleString("en-IN")}
+                </Typography>
+                {appliedCoupon && (
+                  <Typography
+                    variant="caption"
+                    color="success.main"
+                    fontWeight={600}
+                  >
+                    You saved ₹{discountAmount.toLocaleString("en-IN")}
+                  </Typography>
+                )}
+              </Box>
+            </Box>
+
+            <Button
+              fullWidth
+              variant="contained"
+              size="large"
+              startIcon={<ShoppingBag />}
+              onClick={() => setBuyDialogOpen(true)}
+              sx={{
+                borderRadius: 2.5,
+                textTransform: "none",
+                fontWeight: 700,
+                py: 1.5,
+                fontSize: "1rem",
+                boxShadow: "0 4px 14px rgba(41,98,255,0.3)",
+                "&:hover": { boxShadow: "0 6px 20px rgba(41,98,255,0.45)" },
+              }}
+            >
+              Buy · ₹{finalPrice.toLocaleString("en-IN")}
+            </Button>
+          </Paper>
         </Box>
-        <Button
-          fullWidth
-          variant="contained"
-          size="large"
-          startIcon={<ShoppingBag />}
-          onClick={() => setBuyDialogOpen(true)}
-          sx={{
-            borderRadius: 2,
-            textTransform: "none",
-            fontWeight: 700,
-            py: 1.5,
-            fontSize: "1rem",
-          }}
-        >
-          Buy - ₹{totalPrice.toLocaleString("en-IN")}
-        </Button>
-      </Paper>
+      </Box>
 
-      <Dialog
+      <ConfirmDialog
         open={clearDialogOpen}
-        onClose={() => setClearDialogOpen(false)}
-        maxWidth="xs"
-        fullWidth
-        PaperProps={{ sx: { borderRadius: 3 } }}
-      >
-        <DialogTitle fontWeight={700}>Clear Cart?</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            All {totalItems} item{totalItems !== 1 ? "s" : ""} will be removed
-            from your cart. This cannot be undone.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
-          <Button
-            onClick={() => setClearDialogOpen(false)}
-            variant="outlined"
-            sx={{ borderRadius: 2, textTransform: "none" }}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleConfirmClear}
-            variant="contained"
-            color="error"
-            sx={{ borderRadius: 2, textTransform: "none", fontWeight: 600 }}
-          >
-            Clear Cart
-          </Button>
-        </DialogActions>
-      </Dialog>
+        title="Clear Cart?"
+        description={`All ${totalItems} item${totalItems !== 1 ? "s" : ""} will be removed. This cannot be undone.`}
+        confirmLabel="Clear Cart"
+        confirmColor="error"
+        onConfirm={handleConfirmClear}
+        onCancel={() => setClearDialogOpen(false)}
+      />
 
-      <Dialog
+      <ConfirmDialog
         open={Boolean(removeId)}
-        onClose={() => setRemoveId(null)}
-        maxWidth="xs"
-        fullWidth
-        PaperProps={{ sx: { borderRadius: 3 } }}
-      >
-        <DialogTitle fontWeight={700}>Remove Item?</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Are you sure you want to remove this item from your cart?
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
-          <Button
-            onClick={() => setRemoveId(null)}
-            variant="outlined"
-            sx={{ borderRadius: 2, textTransform: "none" }}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleConfirmRemoveItem}
-            variant="contained"
-            color="error"
-            sx={{ borderRadius: 2, textTransform: "none", fontWeight: 600 }}
-          >
-            Remove
-          </Button>
-        </DialogActions>
-      </Dialog>
+        title="Remove Item?"
+        description="Are you sure you want to remove this item from your cart?"
+        confirmLabel="Remove"
+        confirmColor="error"
+        onConfirm={handleConfirmRemoveItem}
+        onCancel={() => setRemoveId(null)}
+      />
 
-      <Dialog
+      <ConfirmDialog
         open={buyDialogOpen}
-        onClose={() => setBuyDialogOpen(false)}
-        maxWidth="xs"
-        fullWidth
-        PaperProps={{ sx: { borderRadius: 3 } }}
-      >
-        <DialogTitle fontWeight={700}>Confirm Purchase?</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            You're about to place an order for {totalItems} item
-            {totalItems !== 1 ? "s" : ""} totalling ₹
-            {totalPrice.toLocaleString("en-IN")}. Proceed?
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
-          <Button
-            onClick={() => setBuyDialogOpen(false)}
-            variant="outlined"
-            sx={{ borderRadius: 2, textTransform: "none" }}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleBuy}
-            variant="contained"
-            color="success"
-            sx={{ borderRadius: 2, textTransform: "none", fontWeight: 600 }}
-          >
-            Confirm & Buy
-          </Button>
-        </DialogActions>
-      </Dialog>
+        title="Confirm Purchase?"
+        description={`Placing an order for ${totalItems} item${totalItems !== 1 ? "s" : ""} · ₹${finalPrice.toLocaleString("en-IN")}. Proceed?`}
+        confirmLabel="Confirm & Buy"
+        confirmColor="success"
+        onConfirm={handleBuy}
+        onCancel={() => setBuyDialogOpen(false)}
+      />
     </Container>
   );
 };

@@ -10,6 +10,7 @@ import ProductFormPage from "./pages/product-form-page";
 import CartPage from "./pages/cart-page";
 import MyProductsPage from "./pages/my-product-page";
 import OrderSuccessPage from "./pages/order-success-page";
+import ProductDetailsPage from "./pages/product-details-page";
 
 const App: React.FC = () => {
   return (
@@ -26,6 +27,10 @@ const App: React.FC = () => {
               <Route path="/cart" element={<CartPage />} />
               <Route path="/my-products" element={<MyProductsPage />} />
               <Route path="*" element={<Navigate to="/" replace />} />
+              <Route
+                path="/product-details/:id"
+                element={<ProductDetailsPage />}
+              />
             </Routes>
           </Box>
         </BrowserRouter>
